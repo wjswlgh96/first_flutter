@@ -166,10 +166,10 @@ class ContentRepository {
     ]
   };
 
-  Future<List<Map<String, String>>> loadContentsFromLocation(
+  Future<List<Map<String, String>>?> loadContentsFromLocation(
       String location) async {
     //? API 통신, location 값을 보내주면서
     await Future.delayed(const Duration(milliseconds: 1000));
-    return data[location];
+    return location == 'mia' ? null : data[location];
   }
 }
