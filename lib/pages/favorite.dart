@@ -1,78 +1,63 @@
-import 'package:first_app/pages/detail.dart';
-import 'package:first_app/repository/contents_repository.dart';
 import 'package:first_app/utils/data_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
+import '../repository/contents_repository.dart';
+import 'detail.dart';
 
-class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
+class MyFavoriteContents extends StatefulWidget {
+  const MyFavoriteContents({Key? key}) : super(key: key);
 
   @override
-  _HomeState createState() => _HomeState();
+  MyFavoriteContentsState createState() => MyFavoriteContentsState();
 }
 
-class _HomeState extends State<Home> {
-  String currentLocation = "ara";
+class MyFavoriteContentsState extends State<MyFavoriteContents> {
   ContentRepository contentRepository = ContentRepository();
-  final Map<String, String> locationTypeToString = {
-    "ara": '아라동',
-    "ora": '오라동',
-    "mia": "미아동"
-  };
+  late Future<List<dynamic>> dataList;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    setState(() {
+      dataList = _loadMyFavoriteContentList();
+    });
+  }
 
   PreferredSizeWidget _appbarWidget() {
     return AppBar(
-      title: GestureDetector(
-        onTap: () {
-          // ignore: avoid_print
-          print('Click');
-        },
-        onLongPress: () {
-          // ignore: avoid_print
-          print("Long pressed!!");
-        },
-        child: PopupMenuButton<String>(
-          offset: const Offset(0, 25),
-          shape: ShapeBorder.lerp(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
-              1),
-          onSelected: (String where) {
-            setState(() {
-              currentLocation = where;
-            });
-          },
-          itemBuilder: (BuildContext _context) {
-            return [
-              const PopupMenuItem(value: 'ara', child: Text("아라동")),
-              const PopupMenuItem(value: 'ora', child: Text("오라동")),
-              const PopupMenuItem(value: 'mia', child: Text("미아동")),
-            ];
-          },
-          child: Row(
-            children: [
-              Text(locationTypeToString[currentLocation].toString()),
-              const Icon(Icons.arrow_drop_down)
-            ],
-          ),
-        ),
+      title: const Text(
+        "관심목록",
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
-      elevation: 1,
-      actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.tune)),
-        IconButton(
-            onPressed: () {},
-            icon: SvgPicture.asset('assets/svg/bell.svg', width: 22)),
-      ],
     );
   }
 
-  _loadContents() {
-    return contentRepository.loadContentsFromLocation(currentLocation);
+  Widget _bodyWidget() {
+    return FutureBuilder(
+      future: dataList,
+      builder: (BuildContext context, AsyncSnapshot snapshot) {
+        print('snapshot:  ${snapshot.data}');
+
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasData) {
+          return _makeDataList(snapshot.data);
+        } else if (!snapshot.hasData) {
+          return const Center(child: Text("해당 지역에 데이터가 없습니다."));
+        }
+
+        return const Center(child: Text("데이터 오류"));
+      },
+    );
   }
 
-  _makeDataList(List<Map<String, String>> datas) {
+  Future<List<dynamic>> _loadMyFavoriteContentList() async {
+    return await contentRepository.loadFavoriteContents();
+  }
+
+  _makeDataList(List<dynamic> datas) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       itemBuilder: (BuildContext _context, int index) {
@@ -85,7 +70,11 @@ class _HomeState extends State<Home> {
                   return DetailContentView(data: datas[index]);
                 },
               ),
-            );
+            ).then((value) {
+              setState(() {
+                dataList = _loadMyFavoriteContentList();
+              });
+            });
           },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -156,25 +145,6 @@ class _HomeState extends State<Home> {
         );
       },
       itemCount: datas.length,
-    );
-  }
-
-  Widget _bodyWidget() {
-    return FutureBuilder(
-      future: _loadContents(),
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasData) {
-          return _makeDataList(snapshot.data);
-        } else if (!snapshot.hasData) {
-          return const Center(child: Text("해당 지역에 데이터가 없습니다."));
-        }
-
-        return const Center(child: Text("데이터 오류"));
-      },
     );
   }
 

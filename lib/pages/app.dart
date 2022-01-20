@@ -1,4 +1,5 @@
 // ignore_for_file: sized_box_for_whitespace
+import 'package:first_app/pages/favorite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'home.dart';
@@ -39,7 +40,7 @@ class _AppState extends State<App> {
         }
       case 4:
         {
-          return Container();
+          return const MyFavoriteContents();
         }
       default:
         {
